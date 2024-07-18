@@ -75,7 +75,13 @@ void draw_grid(uint16_t period) {
 	for (int y = 0; y < window_height; y += period) {
 		for (int x = 0; x < window_width; x += period) {
 			if (x % period == 0 || y % period == 0) {
-				draw_pixel(x, y, 0xFFAAAAAA);
+				uint32_t color = 0xFF444444;
+				int tentacle_length = 4;
+				draw_rect(x, y, 1, 1, color);
+				draw_rect(x - tentacle_length, y, tentacle_length, 1, color);
+				draw_rect(x + 1, y, tentacle_length, 1, color);
+				draw_rect(x, y - tentacle_length, 1, tentacle_length, color);
+				draw_rect(x, y + 1, 1, tentacle_length, color);
 			}
 		}
 	}

@@ -18,4 +18,10 @@ typedef struct {
 	float fov_angle;
 } camera_t;
 
-#endif //VECTOR_H
+vec3_t rotate_x(vec3_t point, float alpha);
+
+vec3_t rotate_y(vec3_t point, float alpha);
+
+vec3_t rotate_z(vec3_t point, float alpha);
+
+#endif
