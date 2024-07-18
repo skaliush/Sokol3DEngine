@@ -10,7 +10,11 @@ add_executable(Sokol3DEngine src/main.c
         src/display.h
         src/display.c
         src/vector.c
-        src/vector.h)
+        src/vector.h
+        src/mesh.c
+        src/mesh.h
+        src/triangle.c
+        src/triangle.h)
 
 target_compile_definitions(Sokol3DEngine PRIVATE SDL_MAIN_HANDLED)
 

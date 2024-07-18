@@ -5,7 +5,9 @@
 #include <stdbool.h>
 #include <SDL.h>
 
-#define FPS 120
+#include "triangle.h"
+
+#define FPS 100
 #define FRAME_TARGET_TIME (1000 / FPS)
 
 extern SDL_Window *window;
@@ -28,5 +30,9 @@ void render_color_buffer(void);
 void draw_grid(uint16_t period);
 
 void draw_rect(int x, int y, int width, int height, uint32_t color);
+
+void draw_line(int x0, int y0, int x1, int y1);
+
+void draw_triangle(triangle_t triangle);
 
 #endif

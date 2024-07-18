@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include "display.h"
 
+#include <math.h>
+
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 uint32_t *color_buffer = NULL;
@@ -93,4 +95,28 @@ void draw_rect(int x, int y, int width, int height, uint32_t color) {
 			draw_pixel(x + i, y + j, color);
 		}
 	}
+}
+
+void draw_line(int x0, int y0, int x1, int y1) {
+	int delta_x = x1 - x0;
+	int delta_y = y1 - y0;
+	int max_delta = abs(delta_x) > abs(delta_y) ? abs(delta_x) : abs(delta_y);
+	float x_increment = delta_x / (float) max_delta;
+	float y_increment = delta_y / (float) max_delta;
+	float current_x = x0;
+	float current_y = y0;
+	for (int i = 0; i <= max_delta; i++) {
+		draw_pixel(round(current_x), round(current_y), 0xFFFFFF00);
+		current_x += x_increment;
+		current_y += y_increment;
+	}
+}
+
+void draw_triangle(triangle_t triangle) {
+	vec2_t a = triangle.points[0];
+	vec2_t b = triangle.points[1];
+	vec2_t c = triangle.points[2];
+	draw_line(a.x, a.y, b.x, b.y);
+	draw_line(b.x, b.y, c.x, c.y);
+	draw_line(c.x, c.y, a.x, a.y);
 }
