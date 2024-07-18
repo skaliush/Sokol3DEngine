@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.28)
+project(Sokol3DEngine C)
+
+set(CMAKE_C_STANDARD 99)
+
+include_directories(libs/SDL2/x86_64-w64-mingw32/include/SDL2)
+link_directories(libs/SDL2/x86_64-w64-mingw32/lib)
+
+add_executable(Sokol3DEngine src/main.c
+        src/display.h
+        src/display.c
+        src/vector.c
+        src/vector.h)
+
+target_compile_definitions(Sokol3DEngine PRIVATE SDL_MAIN_HANDLED)
+
+target_link_libraries(Sokol3DEngine SDL2 SDL2main)
