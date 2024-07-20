@@ -108,6 +108,7 @@ void draw_line_dda(int x0, int y0, int x1, int y1) {
 }
 
 void draw_line_bresenham(int x0, int y0, int x1, int y1) {
+	uint32_t color = 0xFFFFFF00;
 	bool steep = abs(y1 - y0) > abs(x1 - x0);
 	if (steep) {
 		int transfer = x0;
@@ -132,7 +133,7 @@ void draw_line_bresenham(int x0, int y0, int x1, int y1) {
 	int error = 0;
 	int y = y0;
 	for (int x = x0; x <= x1; x++) {
-		draw_pixel(steep ? y : x, steep ? x : y, 0xFFFFFF00);
+		draw_pixel(steep ? y : x, steep ? x : y, color);
 		error += dy;
 		if (error >= dx) {
 			y += y_inc;

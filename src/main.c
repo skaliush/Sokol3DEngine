@@ -6,6 +6,7 @@
 #include <SDL.h>
 #include <math.h>
 #include "display.h"
+#include "draw-numbers.h"
 #include "vector.h"
 #include "mesh.h"
 
@@ -88,6 +89,20 @@ void render(void) {
 		triangle_t triangle = triangles_to_render[i];
 		draw_triangle(triangle);
 	}
+
+	// draw_minus(120, 100, 0xFFFFFF00, 7);
+	// draw_digit_1(150, 100, 0xFFFFFF00, 7);
+	// draw_digit_2(200, 100, 0xFFFFFF00, 7);
+	// draw_digit_3(250, 100, 0xFFFFFF00, 7);
+	// draw_digit_4(300, 100, 0xFFFFFF00, 7);
+	// draw_digit_5(350, 100, 0xFFFFFF00, 7);
+	// draw_digit_6(400, 100, 0xFFFFFF00, 7);
+	// draw_digit_7(450, 100, 0xFFFFFF00, 7);
+	// draw_digit_8(500, 100, 0xFFFFFF00, 7);
+	// draw_digit_9(550, 100, 0xFFFFFF00, 7);
+	// draw_digit_0(600, 100, 0xFFFFFF00, 7);
+
+	draw_number(FPS, 20, 20, 0xFFFFFF00, 4);
 
 	render_color_buffer();
 	clear_color_buffer(0xFF000000);

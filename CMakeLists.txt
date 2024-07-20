@@ -14,7 +14,9 @@ add_executable(Sokol3DEngine src/main.c
         src/mesh.c
         src/mesh.h
         src/triangle.c
-        src/triangle.h)
+        src/triangle.h
+        src/draw-numbers.c
+        src/draw-numbers.h)
 
 target_compile_definitions(Sokol3DEngine PRIVATE SDL_MAIN_HANDLED)
 
