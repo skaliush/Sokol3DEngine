@@ -65,7 +65,6 @@ void update(void) {
 		face_vertices[0] = mesh_vertices[face.a - 1];
 		face_vertices[1] = mesh_vertices[face.b - 1];
 		face_vertices[2] = mesh_vertices[face.c - 1];
-		//fdf
 		triangle_t projected_triangle;
 		for (int j = 0; j < 3; j++) {
 			vec3_t vertex = face_vertices[j];

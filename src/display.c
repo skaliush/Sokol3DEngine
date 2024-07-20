@@ -77,13 +77,8 @@ void draw_grid(uint16_t period) {
 	for (int y = 0; y < window_height; y += period) {
 		for (int x = 0; x < window_width; x += period) {
 			if (x % period == 0 || y % period == 0) {
-				uint32_t color = 0xFF444444;
-				int tentacle_length = 4;
-				draw_rect(x, y, 1, 1, color);
-				draw_rect(x - tentacle_length, y, tentacle_length, 1, color);
-				draw_rect(x + 1, y, tentacle_length, 1, color);
-				draw_rect(x, y - tentacle_length, 1, tentacle_length, color);
-				draw_rect(x, y + 1, 1, tentacle_length, color);
+				draw_rect(x - 4, y, 9, 1, 0xFF444444);
+				draw_rect(x, y - 4, 1, 9, 0xFF444444);
 			}
 		}
 	}
@@ -97,7 +92,7 @@ void draw_rect(int x, int y, int width, int height, uint32_t color) {
 	}
 }
 
-void draw_line(int x0, int y0, int x1, int y1) {
+void draw_line_dda(int x0, int y0, int x1, int y1) {
 	int delta_x = x1 - x0;
 	int delta_y = y1 - y0;
 	int max_delta = abs(delta_x) > abs(delta_y) ? abs(delta_x) : abs(delta_y);
@@ -110,6 +105,50 @@ void draw_line(int x0, int y0, int x1, int y1) {
 		current_x += x_increment;
 		current_y += y_increment;
 	}
+}
+
+void draw_line_bresenham(int x0, int y0, int x1, int y1) {
+	bool steep = abs(y1 - y0) > abs(x1 - x0);
+	if (steep) {
+		int transfer = x0;
+		x0 = y0;
+		y0 = transfer;
+		transfer = x1;
+		x1 = y1;
+		y1 = transfer;
+	}
+	if (x0 > x1) {
+		int transfer = x0;
+		x0 = x1;
+		x1 = transfer;
+		transfer = y0;
+		y0 = y1;
+		y1 = transfer;
+	}
+	int dy = y1 - y0;
+	int dx = x1 - x0;
+	int y_inc = dy > 0 ? 1 : -1;
+	dy = abs(dy);
+	int error = 0;
+	int y = y0;
+	for (int x = x0; x <= x1; x++) {
+		draw_pixel(steep ? y : x, steep ? x : y, 0xFFFFFF00);
+		error += dy;
+		if (error >= dx) {
+			y += y_inc;
+			error -= dx;
+		}
+	}
+}
+
+void draw_line_wu(int x0, int y0, int x1, int y1) {
+	//
+}
+
+void draw_line(int x0, int y0, int x1, int y1) {
+	// draw_line_dda(x0, y0, x1, y1);
+	draw_line_dda(x0 - window_width / 4, y0, x1 - window_width / 4, y1);
+	draw_line_bresenham(x0 + window_width / 4, y0, x1 + window_width / 4, y1);
 }
 
 void draw_triangle(triangle_t triangle) {
