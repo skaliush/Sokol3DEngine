@@ -90,19 +90,7 @@ void render(void) {
 		draw_triangle(triangle);
 	}
 
-	// draw_minus(120, 100, 0xFFFFFF00, 7);
-	// draw_digit_1(150, 100, 0xFFFFFF00, 7);
-	// draw_digit_2(200, 100, 0xFFFFFF00, 7);
-	// draw_digit_3(250, 100, 0xFFFFFF00, 7);
-	// draw_digit_4(300, 100, 0xFFFFFF00, 7);
-	// draw_digit_5(350, 100, 0xFFFFFF00, 7);
-	// draw_digit_6(400, 100, 0xFFFFFF00, 7);
-	// draw_digit_7(450, 100, 0xFFFFFF00, 7);
-	// draw_digit_8(500, 100, 0xFFFFFF00, 7);
-	// draw_digit_9(550, 100, 0xFFFFFF00, 7);
-	// draw_digit_0(600, 100, 0xFFFFFF00, 7);
-
-	draw_number(FPS, 20, 20, 0xFFFFFF00, 4);
+	draw_number(fps, 20, 20, 0xFFAAAA00, 3);
 
 	render_color_buffer();
 	clear_color_buffer(0xFF000000);
@@ -123,11 +111,12 @@ int main(int argc, char *args[]) {
 		update();
 		render();
 
-		int diff = FRAME_TARGET_TIME - (SDL_GetTicks() - frame_start_time);
+		int diff = (1000 / fps) - (SDL_GetTicks() - frame_start_time);
 		if (diff >= 0) {
+			fps++;
 			SDL_Delay(diff);
 		} else {
-			printf("[Warning] frame time is %dms (max %dms)\n", FRAME_TARGET_TIME - diff, FRAME_TARGET_TIME);
+			fps--;
 		}
 	}
 

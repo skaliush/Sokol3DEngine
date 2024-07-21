@@ -3,6 +3,8 @@
 
 #include <math.h>
 
+int fps = FPS;
+
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 uint32_t *color_buffer = NULL;
@@ -58,7 +60,6 @@ void draw_pixel(int x, int y, uint32_t color) {
 	}
 }
 
-
 void render_color_buffer(void) {
 	SDL_UpdateTexture(color_buffer_texture, NULL, color_buffer, (int) (window_width * sizeof(uint32_t)));
 	SDL_RenderCopy(renderer, color_buffer_texture, NULL, NULL);
@@ -71,7 +72,6 @@ void clear_color_buffer(uint32_t color) {
 		}
 	}
 }
-
 
 void draw_grid(uint16_t period) {
 	for (int y = 0; y < window_height; y += period) {
@@ -107,6 +107,10 @@ void draw_line_dda(int x0, int y0, int x1, int y1) {
 	}
 }
 
+void draw_pixel_with_steep(int x, int y, uint32_t color, bool steep) {
+	draw_pixel(steep ? y : x, steep ? x : y, color);
+}
+
 void draw_line_bresenham(int x0, int y0, int x1, int y1) {
 	uint32_t color = 0xFFFFFF00;
 	bool steep = abs(y1 - y0) > abs(x1 - x0);
@@ -133,7 +137,7 @@ void draw_line_bresenham(int x0, int y0, int x1, int y1) {
 	int error = 0;
 	int y = y0;
 	for (int x = x0; x <= x1; x++) {
-		draw_pixel(steep ? y : x, steep ? x : y, color);
+		draw_pixel_with_steep(x, y, color, steep);
 		error += dy;
 		if (error >= dx) {
 			y += y_inc;
@@ -142,14 +146,55 @@ void draw_line_bresenham(int x0, int y0, int x1, int y1) {
 	}
 }
 
+uint32_t adjust_color_intensity(uint32_t color, float intensity) {
+	int r, g, b;
+	// Извлекаем компоненты RGB
+	r = (color >> 16) & 0xFF;
+	g = (color >> 8) & 0xFF;
+	b = color & 0xFF;
+	// Изменяем интенсивность
+	r = (int) (r * intensity);
+	g = (int) (g * intensity);
+	b = (int) (b * intensity);
+	// Комбинируем обратно в формат 0xFFRRGGBB
+	return (0xFF << 24) | (r << 16) | (g << 8) | b;
+}
+
 void draw_line_wu(int x0, int y0, int x1, int y1) {
-	//
+	uint32_t color = 0xFFFFFF00;
+	bool steep = abs(y1 - y0) > abs(x1 - x0);
+	if (steep) {
+		int transfer = x0;
+		x0 = y0;
+		y0 = transfer;
+		transfer = x1;
+		x1 = y1;
+		y1 = transfer;
+	}
+	if (x0 > x1) {
+		int transfer = x0;
+		x0 = x1;
+		x1 = transfer;
+		transfer = y0;
+		y0 = y1;
+		y1 = transfer;
+	}
+	draw_pixel(steep ? y0 : x0, steep ? x0 : y0, color);
+	draw_pixel(steep ? y1 : x1, steep ? x1 : y1, color);
+	int dy = y1 - y0;
+	int dx = x1 - x0;
+	float increment = dy / (float) dx;
+	float y = y0 + increment;
+	for (int x = x0 + 1; x <= x1 - 1; x++) {
+		int y_int = (int) y;
+		draw_pixel_with_steep(x, y_int, adjust_color_intensity(color, 1 - (y - y_int)), steep);
+		draw_pixel_with_steep(x, y_int + 1, adjust_color_intensity(color, y - y_int), steep);
+		y += increment;
+	}
 }
 
 void draw_line(int x0, int y0, int x1, int y1) {
-	// draw_line_dda(x0, y0, x1, y1);
-	draw_line_dda(x0 - window_width / 4, y0, x1 - window_width / 4, y1);
-	draw_line_bresenham(x0 + window_width / 4, y0, x1 + window_width / 4, y1);
+	draw_line_wu(x0, y0, x1, y1);
 }
 
 void draw_triangle(triangle_t triangle) {
