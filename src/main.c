@@ -12,7 +12,7 @@
 
 bool is_running = false;
 
-float fov_factor = 640;
+float fov_factor = 1200;
 
 vec3_t camera_position = {.x = 0, .y = 0, .z = -5};
 
@@ -37,7 +37,8 @@ void setup(void) {
 		window_height
 	);
 
-	load_cube_mesh();
+	// load_cube_mesh();
+	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\f22.obj");
 }
 
 void process_input(void) {
@@ -56,9 +57,9 @@ void process_input(void) {
 }
 
 void update(void) {
-	mesh.rotation.x += 0.006;
-	mesh.rotation.y += 0.006;
-	mesh.rotation.z += 0.006;
+	mesh.rotation.x += 0.002;
+	mesh.rotation.y += 0.004;
+	// mesh.rotation.z += 0.004;
 
 	triangles_to_render = NULL;
 
@@ -87,7 +88,7 @@ void update(void) {
 void render(void) {
 	draw_grid(window_width / 25);
 
-	int triangles_count = array_length(triangles_to_render);
+	size_t triangles_count = array_length(triangles_to_render);
 	for (int i = 0; i < triangles_count; i++) {
 		triangle_t triangle = triangles_to_render[i];
 		draw_triangle(triangle);

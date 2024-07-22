@@ -1,5 +1,6 @@
-#include <stddef.h>
 #include "mesh.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "array.h"
 
@@ -52,4 +53,38 @@ void load_cube_mesh(void) {
         face_t cube_face = cube_faces[i];
         array_push(mesh.faces, cube_face);
     }
+}
+
+void load_obj_file_data(char *filename) {
+    FILE *file;
+    char line[256];
+
+    file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("The file cannot be opened");
+        exit(EXIT_FAILURE);
+    }
+    while (fgets(line, sizeof(line), file)) {
+        if (line[0] == 'v' && line[1] == ' ') {
+            float x, y, z;
+            if (sscanf(line, "v %f %f %f", &x, &y, &z) == 3) {
+                vec3_t cube_vertex = {.x = x, .y = y, .z = z};
+                array_push(mesh.vertices, cube_vertex);
+            } else {
+                perror("Failed to parse the file");
+                exit(EXIT_FAILURE);
+            }
+        }
+        if (line[0] == 'f') {
+            int a, b, c;
+            if (sscanf(line, "f %d/%*d/%*d %d/%*d/%*d %d/%*d/%*d", &a, &b, &c) == 3) {
+                face_t cube_face = {.a = a, .b = b, .c = c};
+                array_push(mesh.faces, cube_face);
+            } else {
+                perror("Failed to parse the file");
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    fclose(file);
 }
