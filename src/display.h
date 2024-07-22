@@ -40,6 +40,6 @@ void draw_line_bresenham(int x0, int y0, int x1, int y1, uint32_t color);
 
 void draw_line_wu(int x0, int y0, int x1, int y1, uint32_t color);
 
-void draw_triangle(triangle_t triangle);
+void draw_triangle(triangle_t triangle, uint32_t color);
 
 #endif

@@ -1,29 +1,81 @@
 #include <math.h>
 #include "vector.h"
 
-vec3_t rotate_x(vec3_t point, float alpha) {
-	vec3_t rotated_point = {
-		.x = point.x,
-		.y = point.y * cos(alpha) - point.z * sin(alpha),
-		.z = point.y * sin(alpha) + point.z * cos(alpha)
-	};
-	return rotated_point;
+vec3_t vector_multiplication(vec3_t v, float scalar) {
+	v.x *= scalar;
+	v.y *= scalar;
+	v.z *= scalar;
+	return v;
 }
 
-vec3_t rotate_y(vec3_t point, float alpha) {
-	vec3_t rotated_point = {
-		.x = point.x * cos(alpha) - point.z * sin(alpha),
-		.y = point.y,
-		.z = point.x * sin(alpha) + point.z * cos(alpha)
+vec3_t vector_addition(vec3_t a, vec3_t b) {
+	vec3_t result = {
+		.x = a.x + b.x,
+		.y = a.y + b.y,
+		.z = a.z + b.z
 	};
-	return rotated_point;
+	return result;
 }
 
-vec3_t rotate_z(vec3_t point, float alpha) {
-	vec3_t rotated_point = {
-		.x = point.x * cos(alpha) - point.y * sin(alpha),
-		.y = point.x * sin(alpha) + point.y * cos(alpha),
-		.z = point.z
+vec3_t vector_negation(vec3_t v) {
+	v.x = -v.x;
+	v.y = -v.y;
+	v.z = -v.z;
+	return v;
+}
+
+vec3_t vector_subtraction(vec3_t a, vec3_t b) {
+	return vector_addition(a, vector_negation(b));
+}
+
+float vector_dot_product(vec3_t a, vec3_t b) {
+	return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+float vector_length(vec3_t v) {
+	return sqrt(vector_dot_product(v, v));
+}
+
+vec3_t vector_cross_product(vec3_t a, vec3_t b) {
+	vec3_t result = {
+		.x = a.y * b.z - a.z * b.y,
+		.y = a.z * b.x - a.x * b.z,
+		.z = a.x * b.y - a.y * b.x
 	};
-	return rotated_point;
+	return result;
+}
+
+vec3_t vector_normalization(vec3_t v) {
+	float length = vector_length(v);
+	v.x /= length;
+	v.y /= length;
+	v.z /= length;
+	return v;
+}
+
+vec3_t vector_rotate_x(vec3_t vector, float angle) {
+	vec3_t rotated_vector = {
+		.x = vector.x,
+		.y = vector.y * cos(angle) - vector.z * sin(angle),
+		.z = vector.y * sin(angle) + vector.z * cos(angle)
+	};
+	return rotated_vector;
+}
+
+vec3_t vector_rotate_y(vec3_t vector, float angle) {
+	vec3_t rotated_vector = {
+		.x = vector.x * cos(angle) - vector.z * sin(angle),
+		.y = vector.y,
+		.z = vector.x * sin(angle) + vector.z * cos(angle)
+	};
+	return rotated_vector;
+}
+
+vec3_t vector_rotate_z(vec3_t vector, float angle) {
+	vec3_t rotated_vector = {
+		.x = vector.x * cos(angle) - vector.y * sin(angle),
+		.y = vector.x * sin(angle) + vector.y * cos(angle),
+		.z = vector.z
+	};
+	return rotated_vector;
 }

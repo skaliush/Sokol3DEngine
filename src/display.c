@@ -194,11 +194,11 @@ void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
 	draw_line_wu(x0, y0, x1, y1, color);
 }
 
-void draw_triangle(triangle_t triangle) {
+void draw_triangle(triangle_t triangle, uint32_t color) {
 	vec2_t a = triangle.points[0];
 	vec2_t b = triangle.points[1];
 	vec2_t c = triangle.points[2];
-	draw_line(a.x, a.y, b.x, b.y, 0xFFFFFF00);
-	draw_line(b.x, b.y, c.x, c.y, 0xFFFFFF00);
-	draw_line(c.x, c.y, a.x, a.y, 0xFFFFFF00);
+	draw_line(a.x, a.y, b.x, b.y, color);
+	draw_line(b.x, b.y, c.x, c.y, color);
+	draw_line(c.x, c.y, a.x, a.y, color);
 }
