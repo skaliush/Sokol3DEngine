@@ -7,8 +7,8 @@ include_directories(libs/SDL2/x86_64-w64-mingw32/include/SDL2)
 link_directories(libs/SDL2/x86_64-w64-mingw32/lib)
 
 add_executable(Sokol3DEngine src/main.c
-        src/display.h
         src/display.c
+        src/display.h
         src/vector.c
         src/vector.h
         src/mesh.c
@@ -16,7 +16,9 @@ add_executable(Sokol3DEngine src/main.c
         src/triangle.c
         src/triangle.h
         src/draw-numbers.c
-        src/draw-numbers.h)
+        src/draw-numbers.h
+        src/array.c
+        src/array.h)
 
 target_compile_definitions(Sokol3DEngine PRIVATE SDL_MAIN_HANDLED)
 

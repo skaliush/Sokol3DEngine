@@ -42,12 +42,11 @@ bool initialize_window(void) {
 		fprintf(stderr, "Error creating SDL renderer.\n");
 		return false;
 	}
-	//SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+	// SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
 	return true;
 }
 
 void destroy_window(void) {
-	free(color_buffer);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 	SDL_Quit();
@@ -61,7 +60,7 @@ void draw_pixel(int x, int y, uint32_t color) {
 }
 
 void render_color_buffer(void) {
-	SDL_UpdateTexture(color_buffer_texture, NULL, color_buffer, (int) (window_width * sizeof(uint32_t)));
+	SDL_UpdateTexture(color_buffer_texture, NULL, color_buffer, window_width * sizeof(uint32_t));
 	SDL_RenderCopy(renderer, color_buffer_texture, NULL, NULL);
 }
 
@@ -92,7 +91,7 @@ void draw_rect(int x, int y, int width, int height, uint32_t color) {
 	}
 }
 
-void draw_line_dda(int x0, int y0, int x1, int y1) {
+void draw_line_dda(int x0, int y0, int x1, int y1, uint32_t color) {
 	int delta_x = x1 - x0;
 	int delta_y = y1 - y0;
 	int max_delta = abs(delta_x) > abs(delta_y) ? abs(delta_x) : abs(delta_y);
@@ -101,18 +100,17 @@ void draw_line_dda(int x0, int y0, int x1, int y1) {
 	float current_x = x0;
 	float current_y = y0;
 	for (int i = 0; i <= max_delta; i++) {
-		draw_pixel(round(current_x), round(current_y), 0xFFFFFF00);
+		draw_pixel(round(current_x), round(current_y), color);
 		current_x += x_increment;
 		current_y += y_increment;
 	}
 }
 
-void draw_pixel_with_steep(int x, int y, uint32_t color, bool steep) {
-	draw_pixel(steep ? y : x, steep ? x : y, color);
+void draw_pixel_reversible(int x, int y, uint32_t color, bool reverse) {
+	draw_pixel(reverse ? y : x, reverse ? x : y, color);
 }
 
-void draw_line_bresenham(int x0, int y0, int x1, int y1) {
-	uint32_t color = 0xFFFFFF00;
+void draw_line_bresenham(int x0, int y0, int x1, int y1, uint32_t color) {
 	bool steep = abs(y1 - y0) > abs(x1 - x0);
 	if (steep) {
 		int transfer = x0;
@@ -137,7 +135,7 @@ void draw_line_bresenham(int x0, int y0, int x1, int y1) {
 	int error = 0;
 	int y = y0;
 	for (int x = x0; x <= x1; x++) {
-		draw_pixel_with_steep(x, y, color, steep);
+		draw_pixel_reversible(x, y, color, steep);
 		error += dy;
 		if (error >= dx) {
 			y += y_inc;
@@ -160,8 +158,7 @@ uint32_t adjust_color_intensity(uint32_t color, float intensity) {
 	return (0xFF << 24) | (r << 16) | (g << 8) | b;
 }
 
-void draw_line_wu(int x0, int y0, int x1, int y1) {
-	uint32_t color = 0xFFFFFF00;
+void draw_line_wu(int x0, int y0, int x1, int y1, uint32_t color) {
 	bool steep = abs(y1 - y0) > abs(x1 - x0);
 	if (steep) {
 		int transfer = x0;
@@ -187,21 +184,21 @@ void draw_line_wu(int x0, int y0, int x1, int y1) {
 	float y = y0 + increment;
 	for (int x = x0 + 1; x <= x1 - 1; x++) {
 		int y_int = (int) y;
-		draw_pixel_with_steep(x, y_int, adjust_color_intensity(color, 1 - (y - y_int)), steep);
-		draw_pixel_with_steep(x, y_int + 1, adjust_color_intensity(color, y - y_int), steep);
+		draw_pixel_reversible(x, y_int, adjust_color_intensity(color, 1 - (y - y_int)), steep);
+		draw_pixel_reversible(x, y_int + 1, adjust_color_intensity(color, y - y_int), steep);
 		y += increment;
 	}
 }
 
-void draw_line(int x0, int y0, int x1, int y1) {
-	draw_line_wu(x0, y0, x1, y1);
+void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
+	draw_line_wu(x0, y0, x1, y1, color);
 }
 
 void draw_triangle(triangle_t triangle) {
 	vec2_t a = triangle.points[0];
 	vec2_t b = triangle.points[1];
 	vec2_t c = triangle.points[2];
-	draw_line(a.x, a.y, b.x, b.y);
-	draw_line(b.x, b.y, c.x, c.y);
-	draw_line(c.x, c.y, a.x, a.y);
+	draw_line(a.x, a.y, b.x, b.y, 0xFFFFFF00);
+	draw_line(b.x, b.y, c.x, c.y, 0xFFFFFF00);
+	draw_line(c.x, c.y, a.x, a.y, 0xFFFFFF00);
 }
