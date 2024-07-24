@@ -1,5 +1,6 @@
 #define SDL_MAIN_HANDLED
 
+#include <math.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -37,7 +38,6 @@ void setup(void) {
 		window_height
 	);
 
-	// load_cube_mesh();
 	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\cube.obj");
 }
 
@@ -56,15 +56,20 @@ void process_input(void) {
 	}
 }
 
-bool is_face_visible(vec3_t face_vertices[3]) {
+vec3_t get_face_normal(vec3_t face_vertices[3]) {
 	vec3_t a = face_vertices[0];
 	vec3_t b = face_vertices[1];
 	vec3_t c = face_vertices[2];
 	vec3_t ab = vector_subtraction(b, a);
 	vec3_t ac = vector_subtraction(c, a);
 	vec3_t face_normal = vector_cross_product(ab, ac);
-	// face_normal = vector_normalization(face_normal);
-	vec3_t vision = vector_subtraction(camera_position, a);
+	face_normal = vector_normalization(face_normal);
+	return face_normal;
+}
+
+bool is_face_visible(vec3_t face_vertices[3]) {
+	vec3_t face_normal = get_face_normal(face_vertices);
+	vec3_t vision = vector_subtraction(camera_position, face_vertices[0]);
 	float dot_result = vector_dot_product(face_normal, vision);
 	return dot_result > 0;
 }
@@ -91,6 +96,7 @@ void update(void) {
 			face_vertices[j] = vertex;
 		}
 		if (is_face_visible(face_vertices)) {
+			projected_triangle.face_normal = get_face_normal(face_vertices);
 			for (int j = 0; j < 3; j++) {
 				vec3_t vertex = face_vertices[j];
 				vertex.z -= camera_position.z;
@@ -110,7 +116,14 @@ void render(void) {
 	size_t triangles_count = array_length(triangles_to_render);
 	for (int i = 0; i < triangles_count; i++) {
 		triangle_t triangle = triangles_to_render[i];
-		draw_triangle(triangle, 0xFFFFFF00);
+		///////////// light & shading beta
+		vec3_t light = {.x = 1, .y = 1, .z = 2};
+		light = vector_normalization(light);
+		float intensity = -vector_dot_product(triangle.face_normal, light);
+		if (intensity < 0.1) intensity = 0.1;
+		draw_filled_triangle(triangle, adjust_color_intensity(0xFFAAFFFF, intensity));
+		///////////// light & shading beta
+		draw_triangle(triangle, 0xFF80C0C0);
 	}
 
 	draw_number(fps, 20, 20, 0xFFAAAA00, 3);

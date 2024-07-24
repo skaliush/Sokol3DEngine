@@ -18,7 +18,9 @@ add_executable(Sokol3DEngine src/main.c
         src/draw-numbers.c
         src/draw-numbers.h
         src/array.c
-        src/array.h)
+        src/array.h
+        src/utils.c
+        src/utils.h)
 
 target_compile_definitions(Sokol3DEngine PRIVATE SDL_MAIN_HANDLED)
 
