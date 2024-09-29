@@ -145,17 +145,12 @@ void draw_line_bresenham(int x0, int y0, int x1, int y1, uint32_t color) {
 }
 
 uint32_t adjust_color_intensity(uint32_t color, float intensity) {
-	int r, g, b;
-	// Извлекаем компоненты RGB
-	r = (color >> 16) & 0xFF;
-	g = (color >> 8) & 0xFF;
-	b = color & 0xFF;
-	// Изменяем интенсивность
-	r = (int) (r * intensity);
-	g = (int) (g * intensity);
-	b = (int) (b * intensity);
-	// Комбинируем обратно в формат 0xFFRRGGBB
-	return (0xFF << 24) | (r << 16) | (g << 8) | b;
+	intensity = clamp(intensity, 0, 1);
+	uint32_t a = color & 0xFF000000;
+	uint32_t r = (color & 0x00FF0000) * intensity;
+	uint32_t g = (color & 0x0000FF00) * intensity;
+	uint32_t b = (color & 0x000000FF) * intensity;
+	return a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
 }
 
 void draw_line_wu(int x0, int y0, int x1, int y1, uint32_t color) {

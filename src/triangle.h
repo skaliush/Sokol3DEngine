@@ -6,11 +6,13 @@
 
 typedef struct {
     int a, b, c;
+    uint32_t color;
 } face_t;
 
 typedef struct {
     vec2_t points[3];
-    vec3_t face_normal;
+    uint32_t color;
+    float avg_depth;
 } triangle_t;
 
 void draw_triangle(triangle_t triangle, uint32_t color);
