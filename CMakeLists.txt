@@ -20,7 +20,9 @@ add_executable(Sokol3DEngine src/main.c
         src/array.c
         src/array.h
         src/utils.c
-        src/utils.h)
+        src/utils.h
+        src/matrix.c
+        src/matrix.h)
 
 target_compile_definitions(Sokol3DEngine PRIVATE SDL_MAIN_HANDLED)
 

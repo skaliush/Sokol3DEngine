@@ -79,3 +79,22 @@ vec3_t vector_rotate_z(vec3_t vector, float angle) {
 	};
 	return rotated_vector;
 }
+
+vec4_t vec3_to_vec4(vec3_t vector3) {
+	vec4_t vector4 = {
+		.x = vector3.x,
+		.y = vector3.y,
+		.z = vector3.z,
+		.w = 1
+	};
+	return vector4;
+}
+
+vec3_t vec4_to_vec3(vec4_t vector4) {
+	vec3_t vector3 = {
+		.x = vector4.x,
+		.y = vector4.y,
+		.z = vector4.z,
+	};
+	return vector3;
+}

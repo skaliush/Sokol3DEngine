@@ -8,15 +8,16 @@
 #include "array.h"
 #include "display.h"
 #include "draw-numbers.h"
+#include "matrix.h"
 #include "vector.h"
 #include "mesh.h"
 #include "utils.h"
 
 bool is_running = false;
 
-float fov_factor = 1200;
+float fov_factor = 1000;
 
-vec3_t light = {.x = 1, .y = 1, .z = 2};
+vec3_t light = {.x = 1, .y = -1, .z = 2};
 
 vec3_t camera_position = {.x = 0, .y = 0, .z = -5};
 
@@ -25,7 +26,7 @@ triangle_t *triangles_to_render = NULL;
 vec2_t project_point(vec3_t point) {
 	vec2_t projected_point = {
 		.x = fov_factor * point.x / point.z,
-		.y = fov_factor * point.y / point.z
+		.y = -fov_factor * point.y / point.z
 	};
 	return projected_point;
 }
@@ -41,7 +42,7 @@ void setup(void) {
 		window_height
 	);
 
-	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\f22.obj");
+	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\cube.obj");
 	light = vector_normalization(light);
 }
 
@@ -78,9 +79,25 @@ bool is_face_visible(vec3_t face_vertices[3], vec3_t face_normal) {
 }
 
 void update(void) {
+	// mesh.scale.y += 0.002;
+	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
+
 	mesh.rotation.x += 0.006;
-	// mesh.rotation.y += 0.004;
-	// mesh.rotation.z += 0.002;
+	mesh.rotation.y += 0.002;
+	mesh.rotation.z += 0.003;
+	mat4_t rotation_x_matrix = mat4_make_rotation_x(mesh.rotation.x);
+	mat4_t rotation_y_matrix = mat4_make_rotation_y(mesh.rotation.y);
+	mat4_t rotation_z_matrix = mat4_make_rotation_z(mesh.rotation.z);
+
+	mesh.translation.x += 0.002;
+	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
+
+	mat4_t world_matrix = mat4_identity();
+	world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
+	world_matrix = mat4_mul_mat4(rotation_x_matrix, world_matrix);
+	world_matrix = mat4_mul_mat4(rotation_y_matrix, world_matrix);
+	world_matrix = mat4_mul_mat4(rotation_z_matrix, world_matrix);
+	world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
 
 	triangles_to_render = NULL;
 
@@ -92,11 +109,9 @@ void update(void) {
 		transformed_vertices[2] = mesh.vertices[face.c - 1];
 		triangle_t projected_triangle;
 		for (int j = 0; j < 3; j++) {
-			vec3_t vertex = transformed_vertices[j];
-			vertex = vector_rotate_x(vertex, mesh.rotation.x);
-			vertex = vector_rotate_y(vertex, mesh.rotation.y);
-			vertex = vector_rotate_z(vertex, mesh.rotation.z);
-			transformed_vertices[j] = vertex;
+			vec4_t vertex = vec3_to_vec4(transformed_vertices[j]);
+			vertex = mat4_mul_vec4(world_matrix, vertex);
+			transformed_vertices[j] = vec4_to_vec3(vertex);
 		}
 		vec3_t face_normal = get_face_normal(transformed_vertices);
 		if (is_face_visible(transformed_vertices, face_normal)) {
