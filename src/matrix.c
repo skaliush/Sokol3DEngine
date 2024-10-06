@@ -113,6 +113,26 @@ mat4_t mat4_make_rotation_z(float angle) {
     return rotation_matrix;
 }
 
+mat4_t mat4_make_perspective(float fov, float aspect, float znear, float zfar) {
+    mat4_t perspective_matrix = mat4_zero();
+    perspective_matrix.m[0][0] = aspect / tan(fov / 2);
+    perspective_matrix.m[1][1] = 1 / tan(fov / 2);
+    perspective_matrix.m[2][2] = zfar / (zfar - znear);
+    perspective_matrix.m[2][3] = -(zfar * znear) / (zfar - znear);
+    perspective_matrix.m[3][2] = 1.0;
+    return perspective_matrix;
+}
+
+vec4_t mat4_project_perspective(mat4_t perspective_matrix, vec4_t vec) {
+    vec = mat4_mul_vec4(perspective_matrix, vec);
+    if (vec.w != 0) {
+        vec.x /= vec.w;
+        vec.y /= vec.w;
+        vec.z /= vec.w;
+    }
+    return vec;
+}
+
 void mat4_print(mat4_t mat) {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {

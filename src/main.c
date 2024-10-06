@@ -15,21 +15,16 @@
 
 bool is_running = false;
 
-float fov_factor = 1000;
-
-vec3_t light = {.x = 1, .y = -1, .z = 2};
+vec3_t global_light = {.x = 1, .y = -2, .z = 1};
 
 vec3_t camera_position = {.x = 0, .y = 0, .z = -5};
 
 triangle_t *triangles_to_render = NULL;
 
-vec2_t project_point(vec3_t point) {
-	vec2_t projected_point = {
-		.x = fov_factor * point.x / point.z,
-		.y = -fov_factor * point.y / point.z
-	};
-	return projected_point;
-}
+mat4_t perspective_matrix;
+float fov_angle = M_PI / 3;
+float znear = 0.1;
+float zfar = 0.1;
 
 void setup(void) {
 	color_buffer = (uint32_t *) malloc(sizeof(uint32_t) * window_width * window_height);
@@ -43,7 +38,11 @@ void setup(void) {
 	);
 
 	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\f22.obj");
-	light = vector_normalization(light);
+
+	global_light = vector_normalization(global_light);
+
+	float aspect = window_height / (float) window_width;
+	perspective_matrix = mat4_make_perspective(fov_angle, aspect, znear, zfar);
 }
 
 bool left_mouse_down, right_mouse_down = false;
@@ -101,10 +100,10 @@ void process_input(void) {
 	}
 }
 
-vec3_t get_face_normal(vec3_t face_vertices[3]) {
-	vec3_t a = face_vertices[0];
-	vec3_t b = face_vertices[1];
-	vec3_t c = face_vertices[2];
+vec3_t get_face_normal(vec4_t face_vertices[3]) {
+	vec3_t a = vec4_to_vec3(face_vertices[0]);
+	vec3_t b = vec4_to_vec3(face_vertices[1]);
+	vec3_t c = vec4_to_vec3(face_vertices[2]);
 	vec3_t ab = vector_subtraction(b, a);
 	vec3_t ac = vector_subtraction(c, a);
 	vec3_t face_normal = vector_cross_product(ab, ac);
@@ -146,6 +145,8 @@ void update(void) {
 		double mouse_rotation_sensitivity = 0.002;
 		mesh.rotation.y += mouse_rotation_sensitivity * delta_mouse_x;
 		mesh.rotation.x -= mouse_rotation_sensitivity * delta_mouse_y;
+		delta_mouse_x = 0;
+		delta_mouse_y = 0;
 	}
 	mat4_t rotation_x_matrix = mat4_make_rotation_x(mesh.rotation.x);
 	mat4_t rotation_y_matrix = mat4_make_rotation_y(mesh.rotation.y);
@@ -171,29 +172,32 @@ void update(void) {
 
 	for (int i = 0; i < array_length(mesh.faces); i++) {
 		face_t face = mesh.faces[i];
-		vec3_t transformed_vertices[3];
-		transformed_vertices[0] = mesh.vertices[face.a - 1];
-		transformed_vertices[1] = mesh.vertices[face.b - 1];
-		transformed_vertices[2] = mesh.vertices[face.c - 1];
+		vec4_t transformed_vertices[3];
+		transformed_vertices[0] = vec3_to_vec4(mesh.vertices[face.a - 1]);
+		transformed_vertices[1] = vec3_to_vec4(mesh.vertices[face.b - 1]);
+		transformed_vertices[2] = vec3_to_vec4(mesh.vertices[face.c - 1]);
 		triangle_t projected_triangle;
 		for (int j = 0; j < 3; j++) {
-			vec4_t vertex = vec3_to_vec4(transformed_vertices[j]);
+			vec4_t vertex = transformed_vertices[j];
 			vertex = mat4_mul_vec4(world_matrix, vertex);
-			transformed_vertices[j] = vec4_to_vec3(vertex);
+			transformed_vertices[j] = vertex;
 		}
 		vec3_t face_normal = get_face_normal(transformed_vertices);
 		if (is_face_visible(transformed_vertices, face_normal)) {
-			float intensity = -vector_dot_product(face_normal, light);
+			float intensity = -vector_dot_product(face_normal, global_light);
 			double ambient_light = 0.2;
 			if (intensity < ambient_light) intensity = ambient_light;
 			projected_triangle.color = adjust_color_intensity(0xFFAAFFFF, intensity);
 			for (int j = 0; j < 3; j++) {
-				vec3_t vertex = transformed_vertices[j];
+				vec4_t vertex = transformed_vertices[j];
 				vertex.z -= camera_position.z;
-				vec2_t projected_point = project_point(vertex);
+				vec4_t projected_point = mat4_project_perspective(perspective_matrix, vertex);
+				projected_point.x *= window_width / 2;
+				projected_point.y *= -window_height / 2;
 				projected_point.x += window_width / 2;
 				projected_point.y += window_height / 2;
-				projected_triangle.points[j] = projected_point;
+				projected_triangle.points[j].x = projected_point.x;
+				projected_triangle.points[j].y = projected_point.y;
 			}
 			projected_triangle.avg_depth =
 					(transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3;
