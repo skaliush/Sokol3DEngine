@@ -42,9 +42,15 @@ void setup(void) {
 		window_height
 	);
 
-	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\cube.obj");
+	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\f22.obj");
 	light = vector_normalization(light);
 }
+
+bool left_mouse_down, right_mouse_down = false;
+int last_mouse_x, last_mouse_y;
+int delta_mouse_x, delta_mouse_y;
+int mouse_wheel;
+bool reset_position = false;
 
 void process_input(void) {
 	SDL_Event event;
@@ -57,6 +63,40 @@ void process_input(void) {
 			if (event.key.keysym.sym == SDLK_ESCAPE) {
 				is_running = false;
 			}
+			if (event.key.keysym.sym == SDLK_SPACE) {
+				reset_position = true;
+			}
+			break;
+		case SDL_MOUSEBUTTONDOWN:
+			if (event.button.button == SDL_BUTTON_LEFT) {
+				left_mouse_down = true;
+			}
+			if (event.button.button == SDL_BUTTON_RIGHT) {
+				right_mouse_down = true;
+			}
+			delta_mouse_x = 0;
+			delta_mouse_y = 0;
+			last_mouse_x = event.motion.x;
+			last_mouse_y = event.motion.y;
+			break;
+		case SDL_MOUSEBUTTONUP:
+			if (event.button.button == SDL_BUTTON_LEFT) {
+				left_mouse_down = false;
+			}
+			if (event.button.button == SDL_BUTTON_RIGHT) {
+				right_mouse_down = false;
+			}
+			break;
+		case SDL_MOUSEMOTION:
+			if (left_mouse_down || right_mouse_down) {
+				delta_mouse_x = event.motion.x - last_mouse_x;
+				delta_mouse_y = event.motion.y - last_mouse_y;
+				last_mouse_x = event.motion.x;
+				last_mouse_y = event.motion.y;
+			}
+			break;
+		case SDL_MOUSEWHEEL:
+			mouse_wheel = event.wheel.y;
 			break;
 	}
 }
@@ -79,17 +119,45 @@ bool is_face_visible(vec3_t face_vertices[3], vec3_t face_normal) {
 }
 
 void update(void) {
-	// mesh.scale.y += 0.002;
+	if (left_mouse_down) {
+		draw_number(last_mouse_x, 20, window_height - 150, 0xFF00CC00, 3);
+		draw_number(last_mouse_y, 20, window_height - 100, 0xFF00CC00, 3);
+	}
+	if (reset_position) {
+		mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
+		mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+		mesh.translation.x = mesh.translation.y = mesh.translation.z = 0;
+		reset_position = false;
+	}
+	if (right_mouse_down) {
+		draw_number(last_mouse_x, 20, window_height - 150, 0xFF0000CC, 3);
+		draw_number(last_mouse_y, 20, window_height - 100, 0xFF0000CC, 3);
+	}
+	if (mouse_wheel != 0) {
+		double mouse_scale_sensitivity = 0.03;
+		mesh.scale.x += mouse_scale_sensitivity * mouse_wheel;
+		mesh.scale.y += mouse_scale_sensitivity * mouse_wheel;
+		mesh.scale.z += mouse_scale_sensitivity * mouse_wheel;
+		mouse_wheel = 0;
+	}
 	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
 
-	mesh.rotation.x += 0.006;
-	mesh.rotation.y += 0.002;
-	mesh.rotation.z += 0.003;
+	if (right_mouse_down) {
+		double mouse_rotation_sensitivity = 0.002;
+		mesh.rotation.y += mouse_rotation_sensitivity * delta_mouse_x;
+		mesh.rotation.x -= mouse_rotation_sensitivity * delta_mouse_y;
+	}
 	mat4_t rotation_x_matrix = mat4_make_rotation_x(mesh.rotation.x);
 	mat4_t rotation_y_matrix = mat4_make_rotation_y(mesh.rotation.y);
 	mat4_t rotation_z_matrix = mat4_make_rotation_z(mesh.rotation.z);
 
-	mesh.translation.x += 0.002;
+	if (left_mouse_down) {
+		double mouse_translation_sensitivity = 0.003;
+		mesh.translation.x += mouse_translation_sensitivity * delta_mouse_x;
+		mesh.translation.y -= mouse_translation_sensitivity * delta_mouse_y;
+		delta_mouse_x = 0;
+		delta_mouse_y = 0;
+	}
 	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
 
 	mat4_t world_matrix = mat4_identity();
@@ -116,7 +184,8 @@ void update(void) {
 		vec3_t face_normal = get_face_normal(transformed_vertices);
 		if (is_face_visible(transformed_vertices, face_normal)) {
 			float intensity = -vector_dot_product(face_normal, light);
-			if (intensity < 0.1) intensity = 0.1;
+			double ambient_light = 0.2;
+			if (intensity < ambient_light) intensity = ambient_light;
 			projected_triangle.color = adjust_color_intensity(0xFFAAFFFF, intensity);
 			for (int j = 0; j < 3; j++) {
 				vec3_t vertex = transformed_vertices[j];

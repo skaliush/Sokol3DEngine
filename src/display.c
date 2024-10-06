@@ -78,8 +78,8 @@ void draw_grid(uint16_t period) {
 	for (int y = 0; y < window_height; y += period) {
 		for (int x = 0; x < window_width; x += period) {
 			if (x % period == 0 || y % period == 0) {
-				draw_rect(x - 4, y, 9, 1, 0xFF444444);
-				draw_rect(x, y - 4, 1, 9, 0xFF444444);
+				draw_rect(x - 4, y, 9, 1, 0xFF666666);
+				draw_rect(x, y - 4, 1, 9, 0xFF666666);
 			}
 		}
 	}
