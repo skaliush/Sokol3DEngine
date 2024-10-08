@@ -16,6 +16,8 @@ mesh_t mesh = {
 void load_obj_file_data(char *filename) {
     FILE *file;
     char line[1024];
+    int vertices_count = 0;
+    int faces_count = 0;
 
     file = fopen(filename, "r");
     if (file == NULL) {
@@ -26,8 +28,9 @@ void load_obj_file_data(char *filename) {
         if (strncmp(line, "v ", 2) == 0) {
             float x, y, z;
             if (sscanf(line, "v %f %f %f", &x, &y, &z) == 3) {
-                vec3_t cube_vertex = {.x = x, .y = y, .z = z};
-                array_push(mesh.vertices, cube_vertex);
+                vec3_t vertex = {.x = x, .y = y, .z = z};
+                array_push(mesh.vertices, vertex);
+                vertices_count++;
             } else {
                 perror("Failed to parse the file");
                 exit(EXIT_FAILURE);
@@ -35,8 +38,9 @@ void load_obj_file_data(char *filename) {
         } else if (line[0] == 'f') {
             int a, b, c;
             if (sscanf(line, "f %d/%*d/%*d %d/%*d/%*d %d/%*d/%*d", &a, &b, &c) == 3) {
-                face_t cube_face = {.a = a, .b = b, .c = c};
-                array_push(mesh.faces, cube_face);
+                face_t face = {.a = a, .b = b, .c = c, .color = 0xFFAAFFFF};
+                array_push(mesh.faces, face);
+                faces_count++;
             } else {
                 perror("Failed to parse the file");
                 exit(EXIT_FAILURE);
@@ -44,4 +48,5 @@ void load_obj_file_data(char *filename) {
         }
     }
     fclose(file);
+    printf("Vertices: %d, triangles: %d", vertices_count, faces_count);
 }
