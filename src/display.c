@@ -5,7 +5,7 @@
 
 #include "utils.h"
 
-int fps = FPS;
+int fps = INIT_FPS;
 
 SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;

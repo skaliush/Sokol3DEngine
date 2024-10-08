@@ -14,6 +14,7 @@
 #include "utils.h"
 
 bool is_running = false;
+float dt = 0;
 
 vec3_t global_light = {.x = 1, .y = -1, .z = 2};
 
@@ -37,7 +38,7 @@ void setup(void) {
 		window_height
 	);
 
-	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\drone.obj");
+	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\crab.obj");
 
 	global_light = vector_norm(global_light);
 
@@ -119,6 +120,16 @@ bool is_face_visible(vec3_t face_vertices[3], vec3_t face_normal) {
 	return dot_result > 0;
 }
 
+void painters_algorithm(void) {
+	for (int i = 0; i < array_length(triangles_to_render); i++) {
+		for (int j = 0; j < array_length(triangles_to_render) - i - 1; j++) {
+			if (triangles_to_render[j].avg_depth < triangles_to_render[j + 1].avg_depth) {
+				SWAP(triangles_to_render[j], triangles_to_render[j + 1]);
+			}
+		}
+	}
+}
+
 void update(void) {
 	if (reset_mesh_position) {
 		mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
@@ -127,18 +138,18 @@ void update(void) {
 		reset_mesh_position = false;
 	}
 	if (mouse_wheel != 0) {
-		double mouse_scale_sensitivity = 0.03;
-		mesh.scale.x += mouse_scale_sensitivity * mouse_wheel;
-		mesh.scale.y += mouse_scale_sensitivity * mouse_wheel;
-		mesh.scale.z += mouse_scale_sensitivity * mouse_wheel;
+		double mouse_scale_sensitivity = 2;
+		mesh.scale.x += mouse_scale_sensitivity * mouse_wheel * dt;
+		mesh.scale.y += mouse_scale_sensitivity * mouse_wheel * dt;
+		mesh.scale.z += mouse_scale_sensitivity * mouse_wheel * dt;
 		mouse_wheel = 0;
 	}
 	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
 
 	if (right_mouse_down) {
-		double mouse_rotation_sensitivity = 0.002;
-		mesh.rotation.y += mouse_rotation_sensitivity * delta_mouse_x;
-		mesh.rotation.x -= mouse_rotation_sensitivity * delta_mouse_y;
+		double mouse_rotation_sensitivity = 0.5;
+		mesh.rotation.y += mouse_rotation_sensitivity * delta_mouse_x * dt;
+		mesh.rotation.x -= mouse_rotation_sensitivity * delta_mouse_y * dt;
 		delta_mouse_x = 0;
 		delta_mouse_y = 0;
 	}
@@ -147,9 +158,9 @@ void update(void) {
 	mat4_t rotation_z_matrix = mat4_make_rotation_z(mesh.rotation.z);
 
 	if (left_mouse_down) {
-		double mouse_translation_sensitivity = 0.003;
-		mesh.translation.x += mouse_translation_sensitivity * delta_mouse_x;
-		mesh.translation.y -= mouse_translation_sensitivity * delta_mouse_y;
+		double mouse_translation_sensitivity = 0.5;
+		mesh.translation.x += mouse_translation_sensitivity * delta_mouse_x * dt;
+		mesh.translation.y -= mouse_translation_sensitivity * delta_mouse_y * dt;
 		delta_mouse_x = 0;
 		delta_mouse_y = 0;
 	}
@@ -202,13 +213,7 @@ void update(void) {
 			array_push(triangles_to_render, projected_triangle);
 		}
 	}
-	for (int i = 0; i < array_length(triangles_to_render); i++) {
-		for (int j = 0; j < array_length(triangles_to_render) - i - 1; j++) {
-			if (triangles_to_render[j].avg_depth < triangles_to_render[j + 1].avg_depth) {
-				SWAP(triangles_to_render[j], triangles_to_render[j + 1]);
-			}
-		}
-	}
+	painters_algorithm();
 }
 
 void render(void) {
@@ -249,7 +254,9 @@ int main(int argc, char *args[]) {
 		update();
 		render();
 
-		int diff = (1000 / fps) - (SDL_GetTicks() - frame_start_time);
+		dt = SDL_GetTicks() - frame_start_time;
+		int diff = (1000 / fps) - dt;
+		dt /= 1000; // converting to secs
 		if (diff >= 0) {
 			fps++;
 			SDL_Delay(diff);

@@ -7,7 +7,7 @@
 
 #include "triangle.h"
 
-#define FPS 100
+#define INIT_FPS 100
 
 extern int fps;
 
