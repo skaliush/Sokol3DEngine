@@ -20,13 +20,6 @@ typedef struct {
 	float w;
 } vec4_t;
 
-typedef struct {
-	vec3_t position;
-	vec3_t direction;
-	vec3_t basis_x;
-	vec3_t basis_y;
-} camera_t;
-
 vec3_t vec3_mul(vec3_t v, float scalar);
 
 vec3_t vec3_add(vec3_t a, vec3_t b);

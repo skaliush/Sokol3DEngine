@@ -22,7 +22,9 @@ add_executable(Sokol3DEngine src/main.c
         src/utils.c
         src/utils.h
         src/matrix.c
-        src/matrix.h)
+        src/matrix.h
+        src/camera.c
+        src/camera.h)
 
 target_compile_definitions(Sokol3DEngine PRIVATE SDL_MAIN_HANDLED)
 

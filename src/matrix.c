@@ -148,22 +148,6 @@ vec4_t mat4_project_perspective(mat4_t perspective_matrix, vec4_t vec) {
     return vec;
 }
 
-mat4_t mat4_look_at(camera_t camera, vec3_t up_direction) {
-    vec3_t new_z = camera.direction; // Forward
-    vec3_t new_x = camera.basis_x; // Right
-    vec3_t new_y = camera.basis_y; // Up
-
-    mat4_t view_matrix = {
-        .m = {
-            {new_x.x, new_x.y, new_x.z, -vec3_dot(new_x, camera.position)},
-            {new_y.x, new_y.y, new_y.z, -vec3_dot(new_y, camera.position)},
-            {new_z.x, new_z.y, new_z.z, -vec3_dot(new_z, camera.position)},
-            {0, 0, 0, 1}
-        }
-    };
-    return view_matrix;
-}
-
 void mat4_print(mat4_t mat) {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {

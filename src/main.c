@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <SDL.h>
 #include "array.h"
+#include "camera.h"
 #include "display.h"
 #include "draw-numbers.h"
 #include "matrix.h"
@@ -20,7 +21,12 @@ vec3_t global_light = {.x = 1, .y = -1, .z = 2};
 
 vec3_t origin = {0, 0, 0};
 camera_t camera = {
-	.position = {.x = 2, .y = 2, .z = 2}
+	.position = {0, 0, -3},
+	.direction = {0, 0, 1},
+	.basis_x = {1, 0, 0},
+	.basis_y = {0, 1, 0},
+	.yaw = 0,
+	.pitch = 0,
 };
 
 triangle_t *triangles_to_render = NULL;
@@ -29,6 +35,9 @@ mat4_t perspective_matrix;
 float fov_angle = M_PI / 3;
 float znear = 0.1;
 float zfar = 0.1;
+
+float min_pitch = -89.9 * M_PI / 180.0;
+float max_pitch = 89.9 * M_PI / 180.0;
 
 vec3_t camera_upward = {0, 1, 0};
 
@@ -43,16 +52,12 @@ void setup(void) {
 		window_height
 	);
 
-	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\crab.obj");
+	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\efa.obj");
 
 	global_light = vec3_norm(global_light);
 
 	float aspect = window_height / (float) window_width;
 	perspective_matrix = mat4_make_perspective(fov_angle, aspect, znear, zfar);
-
-	camera.direction = vec3_norm(vec3_sub(origin, camera.position));
-	camera.basis_x = vec3_norm(vec3_cross(camera_upward, camera.direction)); // Right
-	camera.basis_y = vec3_cross(camera.direction, camera.basis_x); // Up
 }
 
 bool left_mouse_down = false;
@@ -136,34 +141,29 @@ void painters_algorithm(void) {
 }
 
 void update(void) {
-	mat4_t rotation_x_matrix = mat4_make_rotation_x(mesh.rotation.x);
-	mat4_t rotation_y_matrix = mat4_make_rotation_y(mesh.rotation.y);
-	mat4_t rotation_z_matrix = mat4_make_rotation_z(mesh.rotation.z);
-	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
-	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
+	if (mouse_wheel != 0) {
+		float mouse_scale_sensitivity = 4;
+		mesh.scale.x += mouse_scale_sensitivity * mouse_wheel * dt;
+		mesh.scale.y += mouse_scale_sensitivity * mouse_wheel * dt;
+		mesh.scale.z += mouse_scale_sensitivity * mouse_wheel * dt;
+		mouse_wheel = 0;
+	} else if (right_mouse_down) {
+		float mouse_rotation_sensitivity = 0.3;
 
-	if (right_mouse_down) {
-		float mouse_rotation_sensitivity = 0.2;
-		vec4_t camera_position_vec4 = vec3_to_vec4(camera.position);
+		camera.yaw += -mouse_rotation_sensitivity * delta_mouse_x * dt;
+		if (camera.yaw > 2 * M_PI) {
+			camera.yaw -= 2 * M_PI;
+		} else if (camera.yaw < -2 * M_PI) {
+			camera.yaw += 2 * M_PI;
+		}
 
-		mat4_t camera_x_rotation = mat4_make_rotation_y(-mouse_rotation_sensitivity * delta_mouse_x * dt);
-		camera_position_vec4 = mat4_mul_vec4(camera_x_rotation, camera_position_vec4);
-		camera.direction = vec4_to_vec3(mat4_mul_vec4(camera_x_rotation, vec3_to_vec4(camera.direction)));
+		camera.pitch += mouse_rotation_sensitivity * delta_mouse_y * dt;
+		camera.pitch = clamp(camera.pitch, min_pitch, max_pitch);
 
-		mat4_t camera_y_rotation = mat4_make_rotation(camera.basis_x, mouse_rotation_sensitivity * delta_mouse_y * dt);
-		camera_position_vec4 = mat4_mul_vec4(camera_y_rotation, camera_position_vec4);
-		camera.direction = vec4_to_vec3(mat4_mul_vec4(camera_y_rotation, vec3_to_vec4(camera.direction)));
-
-		camera.position = vec4_to_vec3(camera_position_vec4);
 		delta_mouse_x = 0;
 		delta_mouse_y = 0;
-	} else if (mouse_wheel != 0) {
-		float mouse_scale_sensitivity = 5;
-		vec3_t camera_forward_shift = vec3_mul(camera.direction, mouse_scale_sensitivity * mouse_wheel * dt);
-		camera.position = vec3_add(camera.position, camera_forward_shift);
-		mouse_wheel = 0;
 	} else if (left_mouse_down) {
-		float mouse_translation_sensitivity = 0.15;
+		float mouse_translation_sensitivity = 0.25;
 		vec3_t camera_x_shift = vec3_mul(camera.basis_x, -mouse_translation_sensitivity * delta_mouse_x * dt);
 		vec3_t camera_y_shift = vec3_mul(camera.basis_y, mouse_translation_sensitivity * delta_mouse_y * dt);
 		camera.position = vec3_add(vec3_add(camera.position, camera_x_shift), camera_y_shift);
@@ -171,10 +171,14 @@ void update(void) {
 		delta_mouse_y = 0;
 	}
 
-	camera.basis_x = vec3_norm(vec3_cross(camera_upward, camera.direction)); // Right
-	camera.basis_y = vec3_cross(camera.direction, camera.basis_x); // Up
+	mat4_t rotation_x_matrix = mat4_make_rotation_x(mesh.rotation.x);
+	mat4_t rotation_y_matrix = mat4_make_rotation_y(mesh.rotation.y);
+	mat4_t rotation_z_matrix = mat4_make_rotation_z(mesh.rotation.z);
+	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
+	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
 
-	mat4_t view_matrix = mat4_look_at(camera, camera_upward);
+	camera_t rotated_camera = rotate_camera(camera);
+	mat4_t view_matrix = mat4_look_at(rotated_camera);
 
 	mat4_t world_matrix = mat4_identity();
 	world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
