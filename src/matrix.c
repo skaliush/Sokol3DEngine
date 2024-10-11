@@ -113,6 +113,21 @@ mat4_t mat4_make_rotation_z(float angle) {
     return rotation_matrix;
 }
 
+mat4_t mat4_make_rotation(vec3_t axis, float angle) {
+    double cs = cos(angle);
+    double sn = sin(angle);
+    vec3_t u = vec3_norm(axis);
+    mat4_t rotation_matrix = {
+        .m = {
+            {cs + u.x * u.x * (1 - cs), u.x * u.y * (1 - cs) - u.z * sn, u.x * u.z * (1 - cs) + u.y * sn, 0},
+            {u.x * u.y * (1 - cs) + u.z * sn, cs + u.y * u.y * (1 - cs), u.y * u.z * (1 - cs) - u.x * sn, 0},
+            {u.x * u.z * (1 - cs) - u.y * sn, u.y * u.z * (1 - cs) + u.x * sn, cs + u.z * u.z * (1 - cs), 0},
+            {0, 0, 0, 1}
+        }
+    };
+    return rotation_matrix;
+}
+
 mat4_t mat4_make_perspective(float fov, float aspect, float znear, float zfar) {
     mat4_t perspective_matrix = mat4_zero();
     perspective_matrix.m[0][0] = aspect / tan(fov / 2);
@@ -133,16 +148,16 @@ vec4_t mat4_project_perspective(mat4_t perspective_matrix, vec4_t vec) {
     return vec;
 }
 
-mat4_t mat4_look_at(vec3_t camera_position, vec3_t target, vec3_t up_direction) {
-    vec3_t new_z = vector_norm(vector_sub(target, camera_position)); // Forward
-    vec3_t new_x = vector_norm(vector_cross(up_direction, new_z)); // Right
-    vec3_t new_y = vector_cross(new_z, new_x); // Up
+mat4_t mat4_look_at(camera_t camera, vec3_t up_direction) {
+    vec3_t new_z = camera.direction; // Forward
+    vec3_t new_x = camera.basis_x; // Right
+    vec3_t new_y = camera.basis_y; // Up
 
     mat4_t view_matrix = {
         .m = {
-            {new_x.x, new_x.y, new_x.z, -vector_dot(new_x, camera_position)},
-            {new_y.x, new_y.y, new_y.z, -vector_dot(new_y, camera_position)},
-            {new_z.x, new_z.y, new_z.z, -vector_dot(new_z, camera_position)},
+            {new_x.x, new_x.y, new_x.z, -vec3_dot(new_x, camera.position)},
+            {new_y.x, new_y.y, new_y.z, -vec3_dot(new_y, camera.position)},
+            {new_z.x, new_z.y, new_z.z, -vec3_dot(new_z, camera.position)},
             {0, 0, 0, 1}
         }
     };

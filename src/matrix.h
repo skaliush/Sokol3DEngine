@@ -24,11 +24,13 @@ mat4_t mat4_make_rotation_y(float angle);
 
 mat4_t mat4_make_rotation_z(float angle);
 
+mat4_t mat4_make_rotation(vec3_t axis, float angle);
+
 mat4_t mat4_make_perspective(float fov, float aspect, float znear, float zfar);
 
 vec4_t mat4_project_perspective(mat4_t perspective_matrix, vec4_t vec);
 
-mat4_t mat4_look_at(vec3_t camera_position, vec3_t target, vec3_t up_direction);
+mat4_t mat4_look_at(camera_t camera, vec3_t up_direction);
 
 void mat4_print(mat4_t mat);
 

@@ -1,14 +1,14 @@
 #include <math.h>
 #include "vector.h"
 
-vec3_t vector_mul(vec3_t v, float scalar) {
+vec3_t vec3_mul(vec3_t v, float scalar) {
 	v.x *= scalar;
 	v.y *= scalar;
 	v.z *= scalar;
 	return v;
 }
 
-vec3_t vector_add(vec3_t a, vec3_t b) {
+vec3_t vec3_add(vec3_t a, vec3_t b) {
 	vec3_t result = {
 		.x = a.x + b.x,
 		.y = a.y + b.y,
@@ -17,26 +17,30 @@ vec3_t vector_add(vec3_t a, vec3_t b) {
 	return result;
 }
 
-vec3_t vector_negation(vec3_t v) {
+vec3_t vec3_negation(vec3_t v) {
 	v.x = -v.x;
 	v.y = -v.y;
 	v.z = -v.z;
 	return v;
 }
 
-vec3_t vector_sub(vec3_t a, vec3_t b) {
-	return vector_add(a, vector_negation(b));
+bool vec3_equal(vec3_t a, vec3_t b) {
+	return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
 }
 
-float vector_dot(vec3_t a, vec3_t b) {
+vec3_t vec3_sub(vec3_t a, vec3_t b) {
+	return vec3_add(a, vec3_negation(b));
+}
+
+float vec3_dot(vec3_t a, vec3_t b) {
 	return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-float vector_length(vec3_t v) {
-	return sqrt(vector_dot(v, v));
+float vec3_length(vec3_t v) {
+	return sqrt(vec3_dot(v, v));
 }
 
-vec3_t vector_cross(vec3_t a, vec3_t b) {
+vec3_t vec3_cross(vec3_t a, vec3_t b) {
 	vec3_t result = {
 		.x = a.y * b.z - a.z * b.y,
 		.y = a.z * b.x - a.x * b.z,
@@ -45,8 +49,8 @@ vec3_t vector_cross(vec3_t a, vec3_t b) {
 	return result;
 }
 
-vec3_t vector_norm(vec3_t v) {
-	float length = vector_length(v);
+vec3_t vec3_norm(vec3_t v) {
+	float length = vec3_length(v);
 	v.x /= length;
 	v.y /= length;
 	v.z /= length;

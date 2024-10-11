@@ -1,5 +1,6 @@
 #ifndef VECTOR_H
 #define VECTOR_H
+#include <stdbool.h>
 
 typedef struct {
 	float x;
@@ -21,25 +22,28 @@ typedef struct {
 
 typedef struct {
 	vec3_t position;
-	vec3_t rotation;
-	float fov_angle;
+	vec3_t direction;
+	vec3_t basis_x;
+	vec3_t basis_y;
 } camera_t;
 
-vec3_t vector_mul(vec3_t v, float scalar);
+vec3_t vec3_mul(vec3_t v, float scalar);
 
-vec3_t vector_add(vec3_t a, vec3_t b);
+vec3_t vec3_add(vec3_t a, vec3_t b);
 
-vec3_t vector_negation(vec3_t v);
+vec3_t vec3_negation(vec3_t v);
 
-vec3_t vector_sub(vec3_t a, vec3_t b);
+bool vec3_equal(vec3_t a, vec3_t b);
 
-float vector_dot(vec3_t a, vec3_t b);
+vec3_t vec3_sub(vec3_t a, vec3_t b);
 
-float vector_length(vec3_t v);
+float vec3_dot(vec3_t a, vec3_t b);
 
-vec3_t vector_cross(vec3_t a, vec3_t b);
+float vec3_length(vec3_t v);
 
-vec3_t vector_norm(vec3_t v);
+vec3_t vec3_cross(vec3_t a, vec3_t b);
+
+vec3_t vec3_norm(vec3_t v);
 
 vec4_t vec3_to_vec4(vec3_t vector);
 

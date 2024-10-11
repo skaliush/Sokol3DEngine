@@ -18,7 +18,10 @@ float dt = 0;
 
 vec3_t global_light = {.x = 1, .y = -1, .z = 2};
 
-vec3_t camera_position = {.x = 2, .y = 2, .z = 2};
+vec3_t origin = {0, 0, 0};
+camera_t camera = {
+	.position = {.x = 2, .y = 2, .z = 2}
+};
 
 triangle_t *triangles_to_render = NULL;
 
@@ -26,6 +29,8 @@ mat4_t perspective_matrix;
 float fov_angle = M_PI / 3;
 float znear = 0.1;
 float zfar = 0.1;
+
+vec3_t camera_upward = {0, 1, 0};
 
 void setup(void) {
 	color_buffer = (uint32_t *) malloc(sizeof(uint32_t) * window_width * window_height);
@@ -40,10 +45,14 @@ void setup(void) {
 
 	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\crab.obj");
 
-	global_light = vector_norm(global_light);
+	global_light = vec3_norm(global_light);
 
 	float aspect = window_height / (float) window_width;
 	perspective_matrix = mat4_make_perspective(fov_angle, aspect, znear, zfar);
+
+	camera.direction = vec3_norm(vec3_sub(origin, camera.position));
+	camera.basis_x = vec3_norm(vec3_cross(camera_upward, camera.direction)); // Right
+	camera.basis_y = vec3_cross(camera.direction, camera.basis_x); // Up
 }
 
 bool left_mouse_down = false;
@@ -51,7 +60,6 @@ bool right_mouse_down = false;
 int last_mouse_x, last_mouse_y;
 int delta_mouse_x, delta_mouse_y;
 int mouse_wheel;
-bool reset_mesh_position = false;
 
 void process_input(void) {
 	SDL_Event event;
@@ -63,9 +71,6 @@ void process_input(void) {
 		case SDL_KEYDOWN:
 			if (event.key.keysym.sym == SDLK_ESCAPE) {
 				is_running = false;
-			}
-			if (event.key.keysym.sym == SDLK_SPACE) {
-				reset_mesh_position = true;
 			}
 			break;
 		case SDL_MOUSEBUTTONDOWN:
@@ -103,20 +108,20 @@ void process_input(void) {
 }
 
 vec3_t get_face_normal(vec4_t face_vertices[3]) {
-	vec3_t a = vec4_to_vec3(face_vertices[0]);
-	vec3_t b = vec4_to_vec3(face_vertices[1]);
-	vec3_t c = vec4_to_vec3(face_vertices[2]);
-	vec3_t ab = vector_sub(b, a);
-	vec3_t ac = vector_sub(c, a);
-	vec3_t face_normal = vector_cross(ab, ac);
-	face_normal = vector_norm(face_normal);
+	vec3_t vertex_a = vec4_to_vec3(face_vertices[0]);
+	vec3_t vertex_b = vec4_to_vec3(face_vertices[1]);
+	vec3_t vertex_c = vec4_to_vec3(face_vertices[2]);
+	vec3_t side_ab = vec3_sub(vertex_b, vertex_a);
+	vec3_t side_ac = vec3_sub(vertex_c, vertex_a);
+	vec3_t face_normal = vec3_cross(side_ab, side_ac);
+	face_normal = vec3_norm(face_normal);
 	return face_normal;
 }
 
 bool is_face_visible(vec3_t face_vertices[3], vec3_t face_normal) {
 	vec3_t origin = {0, 0, 0}; // the camera after view matrix transformation is in origin
-	vec3_t vision = vector_sub(origin, face_vertices[0]);
-	float dot_result = vector_dot(face_normal, vision);
+	vec3_t vision = vec3_sub(origin, face_vertices[0]);
+	float dot_result = vec3_dot(face_normal, vision);
 	return dot_result > 0;
 }
 
@@ -131,40 +136,45 @@ void painters_algorithm(void) {
 }
 
 void update(void) {
-	if (reset_mesh_position) {
-		mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
-		mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
-		mesh.translation.x = mesh.translation.y = mesh.translation.z = 0;
-		reset_mesh_position = false;
-	}
-	if (mouse_wheel != 0) {
-		double mouse_scale_sensitivity = 2;
-		mesh.scale.x += mouse_scale_sensitivity * mouse_wheel * dt;
-		mesh.scale.y += mouse_scale_sensitivity * mouse_wheel * dt;
-		mesh.scale.z += mouse_scale_sensitivity * mouse_wheel * dt;
-		mouse_wheel = 0;
-	}
-	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
-
-	if (right_mouse_down) {
-		double mouse_rotation_sensitivity = 0.5;
-		mesh.rotation.y += mouse_rotation_sensitivity * delta_mouse_x * dt;
-		mesh.rotation.x -= mouse_rotation_sensitivity * delta_mouse_y * dt;
-		delta_mouse_x = 0;
-		delta_mouse_y = 0;
-	}
 	mat4_t rotation_x_matrix = mat4_make_rotation_x(mesh.rotation.x);
 	mat4_t rotation_y_matrix = mat4_make_rotation_y(mesh.rotation.y);
 	mat4_t rotation_z_matrix = mat4_make_rotation_z(mesh.rotation.z);
+	mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
+	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
 
-	if (left_mouse_down) {
-		double mouse_translation_sensitivity = 0.5;
-		mesh.translation.x += mouse_translation_sensitivity * delta_mouse_x * dt;
-		mesh.translation.y -= mouse_translation_sensitivity * delta_mouse_y * dt;
+	if (right_mouse_down) {
+		float mouse_rotation_sensitivity = 0.2;
+		vec4_t camera_position_vec4 = vec3_to_vec4(camera.position);
+
+		mat4_t camera_x_rotation = mat4_make_rotation_y(-mouse_rotation_sensitivity * delta_mouse_x * dt);
+		camera_position_vec4 = mat4_mul_vec4(camera_x_rotation, camera_position_vec4);
+		camera.direction = vec4_to_vec3(mat4_mul_vec4(camera_x_rotation, vec3_to_vec4(camera.direction)));
+
+		mat4_t camera_y_rotation = mat4_make_rotation(camera.basis_x, mouse_rotation_sensitivity * delta_mouse_y * dt);
+		camera_position_vec4 = mat4_mul_vec4(camera_y_rotation, camera_position_vec4);
+		camera.direction = vec4_to_vec3(mat4_mul_vec4(camera_y_rotation, vec3_to_vec4(camera.direction)));
+
+		camera.position = vec4_to_vec3(camera_position_vec4);
+		delta_mouse_x = 0;
+		delta_mouse_y = 0;
+	} else if (mouse_wheel != 0) {
+		float mouse_scale_sensitivity = 5;
+		vec3_t camera_forward_shift = vec3_mul(camera.direction, mouse_scale_sensitivity * mouse_wheel * dt);
+		camera.position = vec3_add(camera.position, camera_forward_shift);
+		mouse_wheel = 0;
+	} else if (left_mouse_down) {
+		float mouse_translation_sensitivity = 0.15;
+		vec3_t camera_x_shift = vec3_mul(camera.basis_x, -mouse_translation_sensitivity * delta_mouse_x * dt);
+		vec3_t camera_y_shift = vec3_mul(camera.basis_y, mouse_translation_sensitivity * delta_mouse_y * dt);
+		camera.position = vec3_add(vec3_add(camera.position, camera_x_shift), camera_y_shift);
 		delta_mouse_x = 0;
 		delta_mouse_y = 0;
 	}
-	mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
+
+	camera.basis_x = vec3_norm(vec3_cross(camera_upward, camera.direction)); // Right
+	camera.basis_y = vec3_cross(camera.direction, camera.basis_x); // Up
+
+	mat4_t view_matrix = mat4_look_at(camera, camera_upward);
 
 	mat4_t world_matrix = mat4_identity();
 	world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
@@ -173,9 +183,6 @@ void update(void) {
 	world_matrix = mat4_mul_mat4(rotation_z_matrix, world_matrix);
 	world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
 
-	vec3_t target = {0, 0, 0};
-	vec3_t upward = {0, 1, 0};
-	mat4_t view_matrix = mat4_look_at(camera_position, target, upward);
 	world_matrix = mat4_mul_mat4(view_matrix, world_matrix);
 
 	triangles_to_render = NULL;
@@ -194,8 +201,8 @@ void update(void) {
 		}
 		vec3_t face_normal = get_face_normal(transformed_vertices);
 		if (is_face_visible(transformed_vertices, face_normal)) {
-			float intensity = -vector_dot(face_normal, global_light);
-			double ambient_light = 0.2;
+			float intensity = -vec3_dot(face_normal, global_light);
+			float ambient_light = 0.2;
 			if (intensity < ambient_light) intensity = ambient_light;
 			projected_triangle.color = adjust_color_intensity(face.color, intensity);
 			for (int j = 0; j < 3; j++) {
