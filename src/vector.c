@@ -1,6 +1,11 @@
 #include <math.h>
 #include "vector.h"
 
+vec3_t vec3_new(float x, float y, float z) {
+	vec3_t v = {.x = x, .y = y, .z = z};
+	return v;
+}
+
 vec3_t vec3_mul(vec3_t v, float scalar) {
 	v.x *= scalar;
 	v.y *= scalar;
@@ -28,8 +33,8 @@ bool vec3_equal(vec3_t a, vec3_t b) {
 	return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
 }
 
-vec3_t vec3_sub(vec3_t a, vec3_t b) {
-	return vec3_add(a, vec3_negation(b));
+vec3_t vec3_sub(vec3_t minuend, vec3_t subtrahend) {
+	return vec3_add(minuend, vec3_negation(subtrahend));
 }
 
 float vec3_dot(vec3_t a, vec3_t b) {

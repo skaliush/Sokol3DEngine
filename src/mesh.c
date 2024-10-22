@@ -48,5 +48,5 @@ void load_obj_file_data(char *filename) {
         }
     }
     fclose(file);
-    printf("Vertices: %d, triangles: %d", vertices_count, faces_count);
+    printf("Vertices: %d, triangles: %d\n", vertices_count, faces_count);
 }

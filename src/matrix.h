@@ -26,7 +26,7 @@ mat4_t mat4_make_rotation_z(float angle);
 
 mat4_t mat4_make_rotation(vec3_t axis, float angle);
 
-mat4_t mat4_make_perspective(float fov, float aspect, float znear, float zfar);
+mat4_t mat4_make_perspective(float fov_y, float aspect, float znear, float zfar);
 
 vec4_t mat4_project_perspective(mat4_t perspective_matrix, vec4_t vec);
 

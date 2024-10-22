@@ -7,6 +7,7 @@
 #include <SDL.h>
 #include "array.h"
 #include "camera.h"
+#include "clipping.h"
 #include "display.h"
 #include "draw-numbers.h"
 #include "matrix.h"
@@ -32,14 +33,12 @@ camera_t camera = {
 triangle_t *triangles_to_render = NULL;
 
 mat4_t perspective_matrix;
-float fov_angle = M_PI / 3;
-float znear = 0.1;
-float zfar = 0.1;
+float fov_y = M_PI / 3;
+float z_near = 0.1;
+float z_far = 100;
 
 float min_pitch = -89.9 * M_PI / 180.0;
 float max_pitch = 89.9 * M_PI / 180.0;
-
-vec3_t camera_upward = {0, 1, 0};
 
 void setup(void) {
 	color_buffer = (uint32_t *) malloc(sizeof(uint32_t) * window_width * window_height);
@@ -52,12 +51,15 @@ void setup(void) {
 		window_height
 	);
 
-	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\efa.obj");
-
 	global_light = vec3_norm(global_light);
 
-	float aspect = window_height / (float) window_width;
-	perspective_matrix = mat4_make_perspective(fov_angle, aspect, znear, zfar);
+	float aspect_y = window_height / (float) window_width;
+	float aspect_x = 1.0 / aspect_y;
+	perspective_matrix = mat4_make_perspective(fov_y, aspect_y, z_near, z_far);
+
+	init_frustum_planes(fov_y, aspect_x, z_near, z_far);
+
+	load_obj_file_data("D:\\Code\\cpp\\Sokol3DEngine\\assets\\f22.obj");
 }
 
 bool left_mouse_down = false;
@@ -123,9 +125,9 @@ vec3_t get_face_normal(vec4_t face_vertices[3]) {
 	return face_normal;
 }
 
-bool is_face_visible(vec3_t face_vertices[3], vec3_t face_normal) {
+bool back_face_culling(vec4_t face_vertices[3], vec3_t face_normal) {
 	vec3_t origin = {0, 0, 0}; // the camera after view matrix transformation is in origin
-	vec3_t vision = vec3_sub(origin, face_vertices[0]);
+	vec3_t vision = vec3_sub(origin, vec4_to_vec3(face_vertices[0]));
 	float dot_result = vec3_dot(face_normal, vision);
 	return dot_result > 0;
 }
@@ -140,36 +142,46 @@ void painters_algorithm(void) {
 	}
 }
 
-void update(void) {
+void camera_control(void) {
 	if (mouse_wheel != 0) {
-		float mouse_scale_sensitivity = 4;
-		mesh.scale.x += mouse_scale_sensitivity * mouse_wheel * dt;
-		mesh.scale.y += mouse_scale_sensitivity * mouse_wheel * dt;
-		mesh.scale.z += mouse_scale_sensitivity * mouse_wheel * dt;
+		float mouse_scale_sensitivity = 0.05;
+		mesh.scale.x += mouse_scale_sensitivity * mouse_wheel;
+		mesh.scale.y += mouse_scale_sensitivity * mouse_wheel;
+		mesh.scale.z += mouse_scale_sensitivity * mouse_wheel;
+		float min_scale = 0.05;
+		if (mesh.scale.x < min_scale) {
+			mesh.scale.x = min_scale;
+			mesh.scale.y = min_scale;
+			mesh.scale.z = min_scale;
+		}
 		mouse_wheel = 0;
 	} else if (right_mouse_down) {
-		float mouse_rotation_sensitivity = 0.3;
+		float mouse_rotation_sensitivity = 0.003;
 
-		camera.yaw += -mouse_rotation_sensitivity * delta_mouse_x * dt;
+		camera.yaw += -mouse_rotation_sensitivity * delta_mouse_x;
 		if (camera.yaw > 2 * M_PI) {
 			camera.yaw -= 2 * M_PI;
 		} else if (camera.yaw < -2 * M_PI) {
 			camera.yaw += 2 * M_PI;
 		}
 
-		camera.pitch += mouse_rotation_sensitivity * delta_mouse_y * dt;
+		camera.pitch += mouse_rotation_sensitivity * delta_mouse_y;
 		camera.pitch = clamp(camera.pitch, min_pitch, max_pitch);
 
 		delta_mouse_x = 0;
 		delta_mouse_y = 0;
 	} else if (left_mouse_down) {
-		float mouse_translation_sensitivity = 0.25;
-		vec3_t camera_x_shift = vec3_mul(camera.basis_x, -mouse_translation_sensitivity * delta_mouse_x * dt);
-		vec3_t camera_y_shift = vec3_mul(camera.basis_y, mouse_translation_sensitivity * delta_mouse_y * dt);
+		float mouse_translation_sensitivity = 0.002;
+		vec3_t camera_x_shift = vec3_mul(camera.basis_x, -mouse_translation_sensitivity * delta_mouse_x);
+		vec3_t camera_y_shift = vec3_mul(camera.basis_y, mouse_translation_sensitivity * delta_mouse_y);
 		camera.position = vec3_add(vec3_add(camera.position, camera_x_shift), camera_y_shift);
 		delta_mouse_x = 0;
 		delta_mouse_y = 0;
 	}
+}
+
+void update(void) {
+	camera_control();
 
 	mat4_t rotation_x_matrix = mat4_make_rotation_x(mesh.rotation.x);
 	mat4_t rotation_y_matrix = mat4_make_rotation_y(mesh.rotation.y);
@@ -187,7 +199,7 @@ void update(void) {
 	world_matrix = mat4_mul_mat4(rotation_z_matrix, world_matrix);
 	world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
 
-	world_matrix = mat4_mul_mat4(view_matrix, world_matrix);
+	mat4_t result_matrix = mat4_mul_mat4(view_matrix, world_matrix);
 
 	triangles_to_render = NULL;
 
@@ -197,31 +209,53 @@ void update(void) {
 		transformed_vertices[0] = vec3_to_vec4(mesh.vertices[face.a - 1]);
 		transformed_vertices[1] = vec3_to_vec4(mesh.vertices[face.b - 1]);
 		transformed_vertices[2] = vec3_to_vec4(mesh.vertices[face.c - 1]);
-		triangle_t projected_triangle;
 		for (int j = 0; j < 3; j++) {
 			vec4_t vertex = transformed_vertices[j];
-			vertex = mat4_mul_vec4(world_matrix, vertex);
+			vertex = mat4_mul_vec4(result_matrix, vertex);
 			transformed_vertices[j] = vertex;
 		}
 		vec3_t face_normal = get_face_normal(transformed_vertices);
-		if (is_face_visible(transformed_vertices, face_normal)) {
-			float intensity = -vec3_dot(face_normal, global_light);
+		if (back_face_culling(transformed_vertices, face_normal)) {
+			// =============== light ===============
 			float ambient_light = 0.2;
-			if (intensity < ambient_light) intensity = ambient_light;
-			projected_triangle.color = adjust_color_intensity(face.color, intensity);
-			for (int j = 0; j < 3; j++) {
-				vec4_t vertex = transformed_vertices[j];
-				vec4_t projected_point = mat4_project_perspective(perspective_matrix, vertex);
-				projected_point.x *= window_width / 2;
-				projected_point.y *= -window_height / 2;
-				projected_point.x += window_width / 2;
-				projected_point.y += window_height / 2;
-				projected_triangle.points[j].x = projected_point.x;
-				projected_triangle.points[j].y = projected_point.y;
+			float diffuse_light_strength = 1 - ambient_light;
+			// Перенести источники света в camera space
+			float diffuse_light = -vec3_dot(face_normal, global_light);
+			if (diffuse_light < 0) diffuse_light = 0;
+			// specular highlight?
+			float result_light = ambient_light + diffuse_light_strength * diffuse_light;
+			result_light = clamp(result_light, 0, 1);
+			uint32_t triangle_color = adjust_color_intensity(face.color, result_light);
+			// =============== light ===============
+			// =============== clipping ===============
+			polygon_t polygon = make_polygon_from_triangle(transformed_vertices);
+			polygon = clip_polygon(polygon);
+			// =============== clipping ===============
+			// breaking the polygon into triangles
+			for (int k = 0; k < polygon.vertices_count - 2; k++) {
+				vec4_t clipped_vertices[3];
+				clipped_vertices[0] = vec3_to_vec4(polygon.vertices[0]);
+				clipped_vertices[1] = vec3_to_vec4(polygon.vertices[k + 1]);
+				clipped_vertices[2] = vec3_to_vec4(polygon.vertices[k + 2]);
+				vec4_t projected_points[3];
+				for (int j = 0; j < 3; j++) {
+					vec4_t vertex = clipped_vertices[j];
+					projected_points[j] = mat4_project_perspective(perspective_matrix, vertex);
+					projected_points[j].x *= window_width / 2;
+					projected_points[j].y *= -window_height / 2;
+					projected_points[j].x += window_width / 2;
+					projected_points[j].y += window_height / 2;
+				}
+				triangle_t projected_triangle;
+				for (int j = 0; j < 3; j++) {
+					projected_triangle.points[j].x = projected_points[j].x;
+					projected_triangle.points[j].y = projected_points[j].y;
+				}
+				projected_triangle.color = triangle_color;
+				projected_triangle.avg_depth =
+						(clipped_vertices[0].z + clipped_vertices[1].z + clipped_vertices[2].z) / 3;
+				array_push(triangles_to_render, projected_triangle);
 			}
-			projected_triangle.avg_depth =
-					(transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3;
-			array_push(triangles_to_render, projected_triangle);
 		}
 	}
 	painters_algorithm();
