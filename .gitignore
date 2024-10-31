@@ -56,4 +56,5 @@ cmake-build-*
 .idea/
 
 libs/
-assets/
+assets/*
+!assets/f22.obj

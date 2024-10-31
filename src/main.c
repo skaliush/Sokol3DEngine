@@ -22,12 +22,12 @@ vec3_t global_light = {.x = 1, .y = -1, .z = 2};
 
 vec3_t origin = {0, 0, 0};
 camera_t camera = {
-	.position = {0, 0, -3},
+	.position = {0.3, 0.1, -3},
 	.direction = {0, 0, 1},
 	.basis_x = {1, 0, 0},
 	.basis_y = {0, 1, 0},
-	.yaw = 0,
-	.pitch = 0,
+	.yaw = M_PI / 3.5,
+	.pitch = M_PI / 9,
 };
 
 triangle_t *triangles_to_render = NULL;
